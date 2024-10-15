@@ -1,0 +1,93 @@
+services:
+    app:
+        build:
+            args:
+                user: routesoftware
+                uid: 1000
+            context: ./docker
+            dockerfile: Dockerfile
+        image: localhost
+        container_name: orderservice
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+            - ./docker/php.ini:/usr/local/etc/php/conf.d/php.ini
+        ports:
+            - "3000:3000"
+            - "8080:8080"
+        networks:
+            - orderServiceNet
+        depends_on:
+            - db
+            - phpmyadmin
+            - nginx
+            - rabbitmq
+    db:
+        image: mysql
+        container_name: orderservice-mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: "routesoftware"
+            MYSQL_USER: "routesoftware"
+            MYSQL_PASSWORD: "test123"
+            MYSQL_ROOT_PASSWORD: "test123"
+            MYSQL_ALLOW_EMPTY_PASSWORD: 1
+        ports:
+            - 3306:3306
+        volumes:
+            - orderservice-mysql:/var/lib/mysql
+        tty: true
+        networks:
+            - orderServiceNet
+    # phpmyadmin config
+    phpmyadmin:
+        container_name: orderservice-phpmyadmin
+        depends_on:
+            - db
+        image: phpmyadmin
+        restart: always
+        ports:
+            - "8090:80"
+        environment:
+            PMA_HOST: db
+            MYSQL_ROOT_PASSWORD: password
+            UPLOAD_LIMIT: 50024M
+            MEMORY_LIMIT: 50024M
+            MAX_EXECUTION_TIME: 1000
+        networks:
+            - orderServiceNet
+    nginx:
+        image: nginx:alpine
+        container_name: orderservice-nginx
+        restart: unless-stopped
+        ports:
+            - "80:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx:/etc/nginx/conf.d/
+        networks:
+            - orderServiceNet
+    rabbitmq:
+        image: rabbitmq:3-management-alpine
+        container_name: "orderservice-rabbitmq"
+        environment:
+            RABBITMQ_DEFAULT_USER: rabbitmq
+            RABBITMQ_DEFAULT_PASS: "test123"
+            RABBITMQ_DEFAULT_VHOST: "/"
+        ports:
+            - 5672:5672
+            - 15672:15672
+        volumes:
+            - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+            - orderservice-rabbitmq:/var/lib/rabbitmq
+        networks:
+            - orderServiceNet
+networks:
+    orderServiceNet:
+        driver: bridge
+volumes:
+    orderservice-mysql:
+        driver: local
+    orderservice-rabbitmq:
+        driver: local

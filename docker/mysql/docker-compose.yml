@@ -1,0 +1,19 @@
+version: '3.1'
+services:
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: meets_db2
+    ports:
+      - "3308:3306"
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: h2743030.stratoserver.net 
+      PMA_USER: voadz_admin
+      PMA_PASSWORD: V0adz#123$
+    ports:
+      - "8080:80"
